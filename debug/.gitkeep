@@ -1,0 +1,3 @@
+# This file ensures the debug/ directory is tracked in git.
+# All temporary files, logs, and debug output should go here.
+# This directory is gitignored except for this .gitkeep file.

@@ -1,0 +1,65 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'AGENTS.md'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.vscode/**'
+      - '.idea/**'
+      - 'tools/local/**'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'AGENTS.md'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.vscode/**'
+      - '.idea/**'
+      - 'tools/local/**'
+  schedule:
+    - cron: '0 0 * * 0' # Every Sunday at midnight
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  codeql:
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@cb06a0a8527b2c6970741b3a0baa15231dc74a4c # v4.34.1
+        with:
+          languages: cpp
+
+      - name: Install dependencies
+        uses: ./.github/actions/install-linux-deps
+        with:
+          packages: cmake ninja-build clang-19 clang-tools-19 libwxgtk3.2-dev libgtest-dev
+
+      - name: Build
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19 -DMARKDOWN_VIEWER_BUILD_TESTS=OFF -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF
+          cmake --build build
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@cb06a0a8527b2c6970741b3a0baa15231dc74a4c # v4.34.1

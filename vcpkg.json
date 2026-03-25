@@ -1,0 +1,17 @@
+{
+  "name": "markdown-viewer",
+  "version": "1.0.0",
+  "description": "A modern desktop Markdown viewer/previewer.",
+  "homepage": "https://github.com/promptengineer1768/markdown-viewer",
+  "dependencies": [
+    {
+      "name": "wxwidgets",
+      "version>=": "3.2.6"
+    },
+    {
+      "name": "gtest",
+      "version>=": "1.14.0"
+    }
+  ],
+  "builtin-baseline": "efa4634bd526b87559684607d2cbbdeeec0f07d8"
+}

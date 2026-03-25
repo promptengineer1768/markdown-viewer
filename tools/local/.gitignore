@@ -1,0 +1,5 @@
+# tools/local/ - local development tools (not part of the official build system)
+# Track the scripts, ignore downloaded binaries.
+*.exe
+*.zip
+*.tar.gz

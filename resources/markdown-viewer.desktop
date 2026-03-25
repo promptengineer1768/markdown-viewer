@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Markdown Viewer
+Comment=A modern desktop Markdown viewer
+Icon=markdown-viewer
+Exec=markdown_viewer %f
+Terminal=false
+Categories=Office;WordProcessor;TextEditor;
+MimeType=text/markdown;text/x-markdown;

@@ -1,0 +1,14 @@
+name: Install Linux Dependencies
+description: Install required apt packages for Ubuntu CI jobs.
+inputs:
+  packages:
+    description: Space-delimited apt packages.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Install apt packages
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ${{ inputs.packages }}

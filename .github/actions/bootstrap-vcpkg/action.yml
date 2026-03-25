@@ -1,0 +1,15 @@
+name: Bootstrap vcpkg
+description: Update and bootstrap vcpkg in CI.
+inputs:
+  vcpkg_root:
+    description: Path to vcpkg root directory.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Bootstrap vcpkg
+      shell: pwsh
+      run: |
+        Set-Location "${{ inputs.vcpkg_root }}"
+        git pull --ff-only
+        .\bootstrap-vcpkg.bat

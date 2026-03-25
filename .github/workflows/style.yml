@@ -1,0 +1,60 @@
+name: Code Style and Linting
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'AGENTS.md'
+      - '.vscode/**'
+      - '.idea/**'
+      - 'tools/local/**'
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - 'AGENTS.md'
+      - '.vscode/**'
+      - '.idea/**'
+      - 'tools/local/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  clang-tidy:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install clang-tidy 19
+        uses: ./.github/actions/install-linux-deps
+        with:
+          packages: clang-19 clang-tools-19 clang-tidy-19 clang-format-19 cmake ninja-build libwxgtk3.2-dev libgtest-dev
+
+      - name: Configure
+        run: cmake --preset linux-clang-debug -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19
+
+      - name: Build
+        run: cmake --build --preset build-linux-clang-debug
+
+      - name: Run clang-tidy
+        run: |
+          find src include tests \( -name "*.cc" -o -name "*.h" \) \
+          ! -name "view_layout.cc" \
+          ! -name "view_layout.h" \
+          -print0 | xargs -0 clang-tidy-19 -p build/linux-clang-debug --header-filter='.*' --quiet
+
+      - name: Check formatting
+        run: |
+          find src include tests \( -name "*.cc" -o -name "*.h" \) -print0 | xargs -0 clang-format-19 --dry-run --Werror --style=Google

@@ -1,0 +1,239 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+    - 'v*'
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-msvc:
+    # CI_CONTRACT: windows-msvc-release@1
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      VCPKG_INSTALLATION_ROOT: C:\vcpkg
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - uses: ilammy/msvc-dev-cmd@a102174a2b586eec2ea151a69e6fd14404a8ce7c # v1.13.0
+      with:
+        arch: x64
+
+    - name: Install tools
+      run: choco install cmake ninja imagemagick wixtoolset -y
+
+    - name: Bootstrap vcpkg
+      uses: ./.github/actions/bootstrap-vcpkg
+      with:
+        vcpkg_root: ${{ env.VCPKG_INSTALLATION_ROOT }}
+
+    - name: Cache vcpkg
+      uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+      with:
+        path: |
+          ${{ env.VCPKG_INSTALLATION_ROOT }}/installed
+          ${{ env.VCPKG_INSTALLATION_ROOT }}/archives
+        key: ${{ runner.os }}-vcpkg-release-${{ hashFiles('vcpkg.json') }}
+
+    - name: Generate icons
+      run: |
+        magick resources/icon.png -background none -define icon:auto-resize=256,128,96,64,48,32,16 resources/icon.ico
+
+    - name: Configure
+      run: cmake --preset windows-msvc-release
+
+    - name: Build
+      run: cmake --build --preset build-windows-msvc-release
+
+    - name: Verify standalone binary (no bundled DLLs)
+      shell: pwsh
+      run: |
+        $dlls = Get-ChildItem "build/windows-msvc-release/bin" -Filter *.dll -ErrorAction SilentlyContinue
+        if ($dlls) {
+          $dlls | ForEach-Object { Write-Host $_.Name }
+          throw "Expected standalone Windows release build (no bundled DLLs)."
+        }
+
+    - name: Package (ZIP)
+      run: |
+        cd build/windows-msvc-release
+        cpack -G ZIP
+
+    - name: Package (MSI)
+      run: |
+        cd build/windows-msvc-release
+        cpack -G WIX
+
+    - name: Package (Inno Setup)
+      run: |
+        $env:Path = "C:\Program Files (x86)\Inno Setup 6;$env:Path"
+        ISCC.exe installer/markdown-viewer.iss
+
+    - name: Organize packages
+      run: |
+        New-Item -ItemType Directory -Force -Path dist/windows | Out-Null
+        Move-Item dist/*.zip dist/windows/ -ErrorAction SilentlyContinue
+        Move-Item dist/*.msi dist/windows/ -ErrorAction SilentlyContinue
+        Move-Item dist/*.exe dist/windows/ -ErrorAction SilentlyContinue
+
+    - name: Draft Release
+      uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+      with:
+        files: dist/windows/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  linux-clang:
+    # CI_CONTRACT: linux-clang-release@1
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Install dependencies
+      uses: ./.github/actions/install-linux-deps
+      with:
+        packages: cmake ninja-build clang-19 clang-tools-19 libwxgtk3.2-dev libgtk-3-dev libgtest-dev rpm file imagemagick
+
+    - name: Configure
+      run: cmake --preset linux-clang-release -DCMAKE_C_COMPILER=clang-19 -DCMAKE_CXX_COMPILER=clang++-19
+
+    - name: Build
+      run: cmake --build --preset build-linux-clang-release
+
+    - name: Package (CPack)
+      run: |
+        cd build/linux-clang-release
+        cpack -G "TGZ;DEB;RPM"
+
+    - name: Package (AppImage)
+      env:
+        LINUXDEPLOY_VERSION: 1-alpha-20251107-1
+        LINUXDEPLOY_SHA256: c20cd71e3a4e3b80c3483cef793cda3f4e990aca14014d23c544ca3ce1270b4d
+      run: |
+        LINUXDEPLOY_URL="https://github.com/linuxdeploy/linuxdeploy/releases/download/${LINUXDEPLOY_VERSION}/linuxdeploy-x86_64.AppImage"
+        FINAL_URL="$(curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' --tlsv1.2 --retry 3 --output linuxdeploy-x86_64.AppImage --write-out '%{url_effective}' "${LINUXDEPLOY_URL}")"
+        case "${FINAL_URL}" in
+          https://github.com/*|https://objects.githubusercontent.com/*|https://release-assets.githubusercontent.com/*)
+            ;;
+          *)
+            echo "Unexpected linuxdeploy download redirect target: ${FINAL_URL}" >&2
+            exit 1
+            ;;
+        esac
+        echo "${LINUXDEPLOY_SHA256}  linuxdeploy-x86_64.AppImage" | sha256sum -c -
+        chmod +x linuxdeploy-x86_64.AppImage
+        mkdir -p AppDir/usr/bin
+        cp build/linux-clang-release/bin/markdown_viewer AppDir/usr/bin/
+        mkdir -p AppDir/usr/share/applications
+        cp resources/markdown-viewer.desktop AppDir/usr/share/applications/
+        if command -v magick >/dev/null 2>&1; then
+          magick resources/icon.png -resize 256x256^ -gravity center -extent 256x256 AppDir/markdown-viewer.png
+        else
+          convert resources/icon.png -resize 256x256^ -gravity center -extent 256x256 AppDir/markdown-viewer.png
+        fi
+        export APPIMAGE_EXTRACT_AND_RUN=1
+        ./linuxdeploy-x86_64.AppImage --appdir AppDir -e AppDir/usr/bin/markdown_viewer -d resources/markdown-viewer.desktop -i AppDir/markdown-viewer.png --output appimage
+        mkdir -p dist/linux
+        mv Markdown_Viewer*.AppImage dist/linux/ 2>/dev/null || mv markdown-viewer*.AppImage dist/linux/ 2>/dev/null || true
+        mv dist/*.tar.gz dist/linux/ 2>/dev/null || true
+        mv dist/*.deb dist/linux/ 2>/dev/null || true
+        mv dist/*.rpm dist/linux/ 2>/dev/null || true
+
+    - name: Draft Release
+      uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+      with:
+        files: dist/linux/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  macos-clang:
+    # CI_CONTRACT: macos-clang-release@1
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+    - name: Install dependencies
+      run: |
+        brew update
+        brew install cmake ninja wxwidgets googletest imagemagick
+
+    - name: Configure
+      run: cmake --preset macos-clang-release
+
+    - name: Build
+      run: cmake --build --preset build-macos-clang-release
+
+    - name: Generate icns
+      run: |
+        mkdir -p build/icon.iconset
+        magick resources/icon.png -resize 16x16 build/icon.iconset/icon_16x16.png
+        magick resources/icon.png -resize 32x32 build/icon.iconset/icon_16x16@2x.png
+        magick resources/icon.png -resize 32x32 build/icon.iconset/icon_32x32.png
+        magick resources/icon.png -resize 64x64 build/icon.iconset/icon_32x32@2x.png
+        magick resources/icon.png -resize 128x128 build/icon.iconset/icon_128x128.png
+        magick resources/icon.png -resize 256x256 build/icon.iconset/icon_128x128@2x.png
+        magick resources/icon.png -resize 256x256 build/icon.iconset/icon_256x256.png
+        magick resources/icon.png -resize 512x512 build/icon.iconset/icon_256x256@2x.png
+        magick resources/icon.png -resize 512x512 build/icon.iconset/icon_512x512.png
+        magick resources/icon.png -resize 1024x1024 build/icon.iconset/icon_512x512@2x.png
+        iconutil -c icns build/icon.iconset -o resources/icon.icns || true
+
+    - name: Package
+      run: |
+        cd build/macos-clang-release
+        cpack -G "DragNDrop;TGZ"
+
+    - name: Organize packages
+      run: |
+        mkdir -p dist/macos
+        mv dist/*.dmg dist/macos/ 2>/dev/null || true
+        mv dist/*.tar.gz dist/macos/ 2>/dev/null || true
+
+    - name: Draft Release
+      uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+      with:
+        files: dist/macos/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-checksums:
+    runs-on: ubuntu-24.04
+    needs: [windows-msvc, linux-clang, macos-clang]
+    permissions:
+      contents: write
+    steps:
+    - name: Generate SHA256SUMS.txt
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        mkdir -p release-assets
+        gh release download "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" --dir release-assets --pattern "*"
+        find release-assets -maxdepth 1 -type f ! -name 'SHA256SUMS.txt' -print0 \
+          | sort -z \
+          | xargs -0 sha256sum > SHA256SUMS.txt
+        if [ ! -s SHA256SUMS.txt ]; then
+          echo "No release assets found to hash." >&2
+          exit 1
+        fi
+
+    - name: Upload SHA256SUMS.txt
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}" SHA256SUMS.txt --clobber
