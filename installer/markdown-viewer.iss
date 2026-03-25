@@ -68,9 +68,28 @@ Root: HKCU; Subkey: "Software\{#AppName}"; ValueType: string; ValueName: "Instal
 
 ; File associations for .md files (user-level, no admin required)
 Root: HKCU; Subkey: "Software\Classes\.md"; ValueType: string; ValueName: ""; ValueData: "MarkdownViewerFile"; Flags: uninsdeletevalue; Tasks: associate_md
+Root: HKCU; Subkey: "Software\Classes\.md"; ValueType: string; ValueName: "PerceivedType"; ValueData: "text"; Tasks: associate_md
 Root: HKCU; Subkey: "Software\Classes\MarkdownViewerFile"; ValueType: string; ValueName: ""; ValueData: "Markdown Document"; Flags: uninsdeletekey; Tasks: associate_md
-Root: HKCU; Subkey: "Software\Classes\MarkdownViewerFile\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\bin\icon.ico,0"; Tasks: associate_md
+Root: HKCU; Subkey: "Software\Classes\MarkdownViewerFile\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\bin\{#AppExeName},0"; Tasks: associate_md
 Root: HKCU; Subkey: "Software\Classes\MarkdownViewerFile\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\bin\{#AppExeName}"" ""%1"""; Tasks: associate_md
 
 ; File associations for .markdown files
 Root: HKCU; Subkey: "Software\Classes\.markdown"; ValueType: string; ValueName: ""; ValueData: "MarkdownViewerFile"; Flags: uninsdeletevalue; Tasks: associate_markdown
+Root: HKCU; Subkey: "Software\Classes\.markdown"; ValueType: string; ValueName: "PerceivedType"; ValueData: "text"; Tasks: associate_markdown
+
+[Code]
+const
+  SHCNE_ASSOCCHANGED = $08000000;
+  SHCNF_IDLIST = $0000;
+
+procedure SHChangeNotify(wEventId: Integer; uFlags: Integer; dwItem1: Integer; dwItem2: Integer);
+  external 'SHChangeNotify@shell32.dll stdcall';
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+  begin
+    // Notify shell that file associations have changed - this refreshes the icon cache
+    SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, 0, 0);
+  end;
+end;
