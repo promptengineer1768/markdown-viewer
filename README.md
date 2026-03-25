@@ -18,10 +18,6 @@ Markdown Viewer is a modern, cross-platform desktop application for opening, pre
 
 Direct download (Windows installer): [markdown-viewer-1.0.0-win64.exe](https://github.com/promptengineer1768/markdown-viewer/releases/download/v1.0.0/markdown-viewer-1.0.0-win64.exe)
 
-1. Ensure you have [CMake](https://cmake.org/), [Ninja](https://ninja-build.org/), and [vcpkg](https://vcpkg.io/) installed.
-2. Run `build-msvc-debug.bat` to build and test using MSVC 2022.
-3. Launch the app from `build/windows-msvc-debug/bin/markdown_viewer.exe`.
-
 ## Build & Development
 
 For detailed build instructions and architecture overview, see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
