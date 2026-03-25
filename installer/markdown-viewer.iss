@@ -42,6 +42,8 @@ Name: "portuguese"; MessagesFile: "compiler:Languages\Portuguese.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: checkedonce
+Name: "associate_md"; Description: "Associate .md files with {#AppName}"; GroupDescription: "File Associations:"; Flags: checkedonce
+Name: "associate_markdown"; Description: "Associate .markdown files with {#AppName}"; GroupDescription: "File Associations:"; Flags: unchecked
 
 [Files]
 Source: "{#BuildDir}\bin\{#AppExeName}"; DestDir: "{app}\bin"; Flags: ignoreversion
@@ -63,3 +65,15 @@ Filename: "{app}\bin\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringCha
 
 [Registry]
 Root: HKCU; Subkey: "Software\{#AppName}"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"
+
+; File associations for .md files
+Root: HKCR; Subkey: ".md"; ValueType: string; ValueName: ""; ValueData: "MarkdownViewerFile"; Flags: uninsdeletevalue; Tasks: associate_md
+Root: HKCR; Subkey: "MarkdownViewerFile"; ValueType: string; ValueName: ""; ValueData: "Markdown Document"; Flags: uninsdeletekey; Tasks: associate_md
+Root: HKCR; Subkey: "MarkdownViewerFile\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\bin\icon.ico,0"; Tasks: associate_md
+Root: HKCR; Subkey: "MarkdownViewerFile\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\bin\{#AppExeName}"" ""%1"""; Tasks: associate_md
+
+; File associations for .markdown files
+Root: HKCR; Subkey: ".markdown"; ValueType: string; ValueName: ""; ValueData: "MarkdownViewerFile"; Flags: uninsdeletevalue; Tasks: associate_markdown
+Root: HKCR; Subkey: "MarkdownViewerFile"; ValueType: string; ValueName: ""; ValueData: "Markdown Document"; Flags: uninsdeletekeyifempty; Tasks: associate_markdown
+Root: HKCR; Subkey: "MarkdownViewerFile\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\bin\icon.ico,0"; Tasks: associate_markdown
+Root: HKCR; Subkey: "MarkdownViewerFile\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\bin\{#AppExeName}"" ""%1"""; Tasks: associate_markdown
