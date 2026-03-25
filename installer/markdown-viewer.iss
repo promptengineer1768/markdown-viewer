@@ -66,14 +66,11 @@ Filename: "{app}\bin\{#AppExeName}"; Description: "{cm:LaunchProgram,{#StringCha
 [Registry]
 Root: HKCU; Subkey: "Software\{#AppName}"; ValueType: string; ValueName: "InstallPath"; ValueData: "{app}"
 
-; File associations for .md files
-Root: HKCR; Subkey: ".md"; ValueType: string; ValueName: ""; ValueData: "MarkdownViewerFile"; Flags: uninsdeletevalue; Tasks: associate_md
-Root: HKCR; Subkey: "MarkdownViewerFile"; ValueType: string; ValueName: ""; ValueData: "Markdown Document"; Flags: uninsdeletekey; Tasks: associate_md
-Root: HKCR; Subkey: "MarkdownViewerFile\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\bin\icon.ico,0"; Tasks: associate_md
-Root: HKCR; Subkey: "MarkdownViewerFile\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\bin\{#AppExeName}"" ""%1"""; Tasks: associate_md
+; File associations for .md files (user-level, no admin required)
+Root: HKCU; Subkey: "Software\Classes\.md"; ValueType: string; ValueName: ""; ValueData: "MarkdownViewerFile"; Flags: uninsdeletevalue; Tasks: associate_md
+Root: HKCU; Subkey: "Software\Classes\MarkdownViewerFile"; ValueType: string; ValueName: ""; ValueData: "Markdown Document"; Flags: uninsdeletekey; Tasks: associate_md
+Root: HKCU; Subkey: "Software\Classes\MarkdownViewerFile\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\bin\icon.ico,0"; Tasks: associate_md
+Root: HKCU; Subkey: "Software\Classes\MarkdownViewerFile\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\bin\{#AppExeName}"" ""%1"""; Tasks: associate_md
 
 ; File associations for .markdown files
-Root: HKCR; Subkey: ".markdown"; ValueType: string; ValueName: ""; ValueData: "MarkdownViewerFile"; Flags: uninsdeletevalue; Tasks: associate_markdown
-Root: HKCR; Subkey: "MarkdownViewerFile"; ValueType: string; ValueName: ""; ValueData: "Markdown Document"; Flags: uninsdeletekeyifempty; Tasks: associate_markdown
-Root: HKCR; Subkey: "MarkdownViewerFile\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\bin\icon.ico,0"; Tasks: associate_markdown
-Root: HKCR; Subkey: "MarkdownViewerFile\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\bin\{#AppExeName}"" ""%1"""; Tasks: associate_markdown
+Root: HKCU; Subkey: "Software\Classes\.markdown"; ValueType: string; ValueName: ""; ValueData: "MarkdownViewerFile"; Flags: uninsdeletevalue; Tasks: associate_markdown
