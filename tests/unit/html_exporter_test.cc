@@ -270,10 +270,8 @@ TEST(HtmlExporterTest, DeDuplicatesDuplicateHeadingAnchors) {
   Block first;
   first.type = BlockType::kHeading;
   first.level = 2;
-  first.inlines.push_back(InlineNode{.type = InlineType::kText,
-                                     .text = "Notes",
-                                     .url = "",
-                                     .alt_text = ""});
+  first.inlines.push_back(InlineNode{
+      .type = InlineType::kText, .text = "Notes", .url = "", .alt_text = ""});
   document.blocks.push_back(first);
 
   Block second = first;

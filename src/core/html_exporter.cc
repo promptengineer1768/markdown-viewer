@@ -218,7 +218,8 @@ std::vector<std::string> BuildHeadingIds(const Document& document) {
     if (block.type != BlockType::kHeading) {
       continue;
     }
-    const std::string base_slug = SlugifyHeadingText(CollectInlineText(block.inlines));
+    const std::string base_slug =
+        SlugifyHeadingText(CollectInlineText(block.inlines));
     const int duplicate_count = seen_slugs[base_slug]++;
     heading_ids.at(i) = duplicate_count == 0
                             ? base_slug
@@ -345,8 +346,7 @@ std::string RenderHtmlDocument(const Document& document,
         break;
       case BlockType::kHeading:
         html << "  <h" << block.level << " id=\"" << heading_ids.at(index)
-             << "\">"
-             << RenderInlineList(block.inlines, base_url) << "</h"
+             << "\">" << RenderInlineList(block.inlines, base_url) << "</h"
              << block.level << ">\n";
         break;
       case BlockType::kListItem:
@@ -417,9 +417,8 @@ std::string RenderHtmlDocument(const Document& document,
              ++toc_index) {
           const Block& b = document.blocks.at(toc_index);
           if (b.type == BlockType::kHeading) {
-            html << "<li><a href=\"#" << heading_ids.at(toc_index)
-                 << "\">" << RenderInlineList(b.inlines, base_url)
-                 << "</a></li>";
+            html << "<li><a href=\"#" << heading_ids.at(toc_index) << "\">"
+                 << RenderInlineList(b.inlines, base_url) << "</a></li>";
           }
         }
         html << "</ul></div>\n";

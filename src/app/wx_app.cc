@@ -518,12 +518,13 @@ bool MarkdownFrame::OpenLinkInSystemBrowser(const wxString& href) {
 
   wxString launch_target = href;
   if (link_path_lower.rfind("file:", 0) == 0) {
-    const wxFileName filename = wxFileSystem::URLToFileName(
-        WxStringFromUtf8(link_parts.path));
+    const wxFileName filename =
+        wxFileSystem::URLToFileName(WxStringFromUtf8(link_parts.path));
     if (!filename.IsOk()) {
       return false;
     }
-    std::filesystem::path target_path = PathFromWxString(filename.GetFullPath());
+    std::filesystem::path target_path =
+        PathFromWxString(filename.GetFullPath());
     std::error_code ignored;
     const std::filesystem::path normalized =
         std::filesystem::weakly_canonical(target_path, ignored);
