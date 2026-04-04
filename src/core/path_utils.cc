@@ -5,6 +5,31 @@
 
 namespace markdown {
 
+bool HasUriScheme(const std::string& href) {
+  const size_t scheme_separator = href.find(':');
+  const size_t first_delimiter = href.find_first_of("/?#");
+  if (scheme_separator == 1 && href.size() > 2 &&
+      ((href[2] == '/') || (href[2] == '\\'))) {
+    const char drive_letter = href[0];
+    if ((drive_letter >= 'A' && drive_letter <= 'Z') ||
+        (drive_letter >= 'a' && drive_letter <= 'z')) {
+      return false;
+    }
+  }
+  return scheme_separator != std::string::npos &&
+         (first_delimiter == std::string::npos ||
+          scheme_separator < first_delimiter);
+}
+
+LinkReferenceParts SplitLinkReference(const std::string& href) {
+  const size_t suffix_start = href.find_first_of("?#");
+  if (suffix_start == std::string::npos) {
+    return {.path = href, .suffix = ""};
+  }
+  return {.path = href.substr(0, suffix_start),
+          .suffix = href.substr(suffix_start)};
+}
+
 std::wstring GetBaseNameWithoutExtension(const std::filesystem::path& path) {
   return path.stem().wstring();
 }

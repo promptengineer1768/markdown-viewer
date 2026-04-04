@@ -238,5 +238,51 @@ TEST(HtmlExporterTest, EscapesAttributeValues) {
   EXPECT_NE(html.find("&amp;"), std::string::npos);
 }
 
+TEST(HtmlExporterTest, UsesSlugAnchorsForHeadings) {
+  Document document;
+
+  Block heading;
+  heading.type = BlockType::kHeading;
+  heading.level = 2;
+  heading.inlines.push_back(InlineNode{.type = InlineType::kText,
+                                       .text = "Core Startup",
+                                       .url = "",
+                                       .alt_text = ""});
+  document.blocks.push_back(heading);
+
+  Block paragraph;
+  paragraph.type = BlockType::kParagraph;
+  paragraph.inlines.push_back(InlineNode{.type = InlineType::kLink,
+                                         .text = "Go",
+                                         .url = "#core-startup",
+                                         .alt_text = ""});
+  document.blocks.push_back(paragraph);
+
+  const std::string html = RenderHtmlDocument(document, "anchors");
+  EXPECT_NE(html.find("<h2 id=\"core-startup\">Core Startup</h2>"),
+            std::string::npos);
+  EXPECT_NE(html.find("<a href=\"#core-startup\">Go</a>"), std::string::npos);
+}
+
+TEST(HtmlExporterTest, DeDuplicatesDuplicateHeadingAnchors) {
+  Document document;
+
+  Block first;
+  first.type = BlockType::kHeading;
+  first.level = 2;
+  first.inlines.push_back(InlineNode{.type = InlineType::kText,
+                                     .text = "Notes",
+                                     .url = "",
+                                     .alt_text = ""});
+  document.blocks.push_back(first);
+
+  Block second = first;
+  document.blocks.push_back(second);
+
+  const std::string html = RenderHtmlDocument(document, "dedupe");
+  EXPECT_NE(html.find("<h2 id=\"notes\">Notes</h2>"), std::string::npos);
+  EXPECT_NE(html.find("<h2 id=\"notes-1\">Notes</h2>"), std::string::npos);
+}
+
 }  // namespace
 }  // namespace markdown

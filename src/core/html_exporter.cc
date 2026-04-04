@@ -3,6 +3,8 @@
 #include <cctype>
 #include <iterator>
 #include <sstream>
+#include <unordered_map>
+#include <vector>
 
 #include "markdown/text_utils.h"
 
@@ -170,11 +172,67 @@ std::string RenderInlineList(const std::vector<InlineNode>& nodes,
   return html;
 }
 
+std::string CollectInlineText(const std::vector<InlineNode>& nodes) {
+  std::string text;
+  for (const InlineNode& node : nodes) {
+    if (!node.text.empty()) {
+      text += node.text;
+    } else if (!node.alt_text.empty()) {
+      text += node.alt_text;
+    }
+  }
+  return text;
+}
+
+std::string SlugifyHeadingText(const std::string& text) {
+  std::string slug;
+  bool previous_was_dash = false;
+  for (unsigned char chr : text) {
+    if (std::isalnum(chr) != 0) {
+      slug.push_back(static_cast<char>(std::tolower(chr)));
+      previous_was_dash = false;
+      continue;
+    }
+    if (!previous_was_dash) {
+      slug.push_back('-');
+      previous_was_dash = true;
+    }
+  }
+  while (!slug.empty() && slug.front() == '-') {
+    slug.erase(slug.begin());
+  }
+  while (!slug.empty() && slug.back() == '-') {
+    slug.pop_back();
+  }
+  if (slug.empty()) {
+    return "section";
+  }
+  return slug;
+}
+
+std::vector<std::string> BuildHeadingIds(const Document& document) {
+  std::vector<std::string> heading_ids(document.blocks.size());
+  std::unordered_map<std::string, int> seen_slugs;
+  for (size_t i = 0; i < document.blocks.size(); ++i) {
+    const Block& block = document.blocks.at(i);
+    if (block.type != BlockType::kHeading) {
+      continue;
+    }
+    const std::string base_slug = SlugifyHeadingText(CollectInlineText(block.inlines));
+    const int duplicate_count = seen_slugs[base_slug]++;
+    heading_ids.at(i) = duplicate_count == 0
+                            ? base_slug
+                            : base_slug + "-" + std::to_string(duplicate_count);
+  }
+  return heading_ids;
+}
+
 }  // namespace
 
 std::string RenderHtmlDocument(const Document& document,
                                const std::string& title, bool dark_theme,
                                const std::string& base_url) {
+  const std::vector<std::string> heading_ids = BuildHeadingIds(document);
   std::ostringstream html;
   html << "<!DOCTYPE html>\n";
   html << "<html lang=\"en\">\n";
@@ -253,7 +311,8 @@ std::string RenderHtmlDocument(const Document& document,
     }
   };
 
-  for (const Block& block : document.blocks) {
+  for (size_t index = 0; index < document.blocks.size(); ++index) {
+    const Block& block = document.blocks.at(index);
     const bool is_list = (block.type == BlockType::kListItem ||
                           block.type == BlockType::kOrderedList ||
                           block.type == BlockType::kTaskListItem);
@@ -285,8 +344,8 @@ std::string RenderHtmlDocument(const Document& document,
              << "</p>\n";
         break;
       case BlockType::kHeading:
-        html << "  <h" << block.level << " id=\"h" << block.level << "-"
-             << block.indentation << "\">"
+        html << "  <h" << block.level << " id=\"" << heading_ids.at(index)
+             << "\">"
              << RenderInlineList(block.inlines, base_url) << "</h"
              << block.level << ">\n";
         break;
@@ -354,9 +413,11 @@ std::string RenderHtmlDocument(const Document& document,
         break;
       case BlockType::kTableOfContents:
         html << "  <div class=\"toc\"><strong>Table of Contents</strong><ul>";
-        for (const auto& b : document.blocks) {
+        for (size_t toc_index = 0; toc_index < document.blocks.size();
+             ++toc_index) {
+          const Block& b = document.blocks.at(toc_index);
           if (b.type == BlockType::kHeading) {
-            html << "<li><a href=\"#h" << b.level << "-" << b.indentation
+            html << "<li><a href=\"#" << heading_ids.at(toc_index)
                  << "\">" << RenderInlineList(b.inlines, base_url)
                  << "</a></li>";
           }

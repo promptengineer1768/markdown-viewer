@@ -1,6 +1,6 @@
 # UI strings for Markdown Viewer (fr-FR)
 app_name=Visionneuse Markdown
-app_version=1.0
+app_version=1.01
 app_version_label=Version
 app_description=Ouvrez, previsualisez et exportez des documents Markdown.
 app_copyright=(c) 2026 halifaxgeorge

@@ -2,7 +2,7 @@
 ; This script creates a Windows installer with proper desktop shortcut support
 
 #define AppName "Markdown Viewer"
-#define AppVersion "1.0.0"
+#define AppVersion "1.0.1"
 #define AppPublisher "George Halifax"
 #define AppURL "https://github.com/promptengineer1768/markdown-viewer"
 #define AppExeName "markdown_viewer.exe"

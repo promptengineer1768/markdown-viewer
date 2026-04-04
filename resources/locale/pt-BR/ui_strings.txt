@@ -1,6 +1,6 @@
 # UI strings for Markdown Viewer (pt-BR)
 app_name=Visualizador Markdown
-app_version=1.0
+app_version=1.01
 app_version_label=Versao
 app_description=Abra, visualize e exporte documentos Markdown.
 app_copyright=(c) 2026 halifaxgeorge

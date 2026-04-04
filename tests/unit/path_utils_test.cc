@@ -44,5 +44,27 @@ TEST(PathUtilsTest, BuildsDefaultExportForRelativeDotPath) {
   EXPECT_EQ(GetDefaultExportPath(input), expected);
 }
 
+TEST(PathUtilsTest, DetectsUriSchemeForExternalLinks) {
+  EXPECT_TRUE(HasUriScheme("https://example.com/docs"));
+  EXPECT_TRUE(HasUriScheme("mailto:test@example.com"));
+  EXPECT_FALSE(HasUriScheme("#core-startup"));
+  EXPECT_FALSE(HasUriScheme("BASIC_API.md#core-startup"));
+  EXPECT_FALSE(HasUriScheme("C:/docs/BASIC_API.md#core-startup"));
+  EXPECT_FALSE(HasUriScheme("D:\\docs\\BASIC_API.md#core-startup"));
+}
+
+TEST(PathUtilsTest, SplitsFragmentOnlyLink) {
+  const LinkReferenceParts parts = SplitLinkReference("#core-startup");
+  EXPECT_EQ(parts.path, "");
+  EXPECT_EQ(parts.suffix, "#core-startup");
+}
+
+TEST(PathUtilsTest, SplitsLocalPathAndAnchorLink) {
+  const LinkReferenceParts parts =
+      SplitLinkReference("BASIC_API.md#core-startup");
+  EXPECT_EQ(parts.path, "BASIC_API.md");
+  EXPECT_EQ(parts.suffix, "#core-startup");
+}
+
 }  // namespace
 }  // namespace markdown

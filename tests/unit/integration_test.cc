@@ -142,5 +142,21 @@ TEST(IntegrationTest, LightThemeAppliesColors) {
   EXPECT_NE(html.find("bgcolor=\"#ffffff\""), std::string::npos);
 }
 
+TEST(IntegrationTest, FragmentTocLinkMatchesRenderedHeadingId) {
+  const std::string markdown =
+      "## Table Of Contents\n\n"
+      "- [Core Startup](#core-startup)\n\n"
+      "## Core Startup\n\n"
+      "Details.\n";
+  const Document document = ParseMarkdown(markdown);
+  const std::string html = RenderHtmlDocument(document, "TOC");
+
+  // Regression: TOC-style fragment links must match exported heading IDs.
+  EXPECT_NE(html.find("<a href=\"#core-startup\">Core Startup</a>"),
+            std::string::npos);
+  EXPECT_NE(html.find("<h2 id=\"core-startup\">Core Startup</h2>"),
+            std::string::npos);
+}
+
 }  // namespace
 }  // namespace markdown

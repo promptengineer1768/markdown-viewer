@@ -6,6 +6,24 @@
 
 namespace markdown {
 
+/// \brief Splits a link into path and suffix components.
+///
+/// The suffix begins with '?' or '#' when present and is preserved as-is.
+/// Examples:
+/// - "#section" -> path="", suffix="#section"
+/// - "guide.md#intro" -> path="guide.md", suffix="#intro"
+/// - "guide.md?x=1#intro" -> path="guide.md", suffix="?x=1#intro"
+struct LinkReferenceParts {
+  std::string path;
+  std::string suffix;
+};
+
+/// \brief Returns true when the link has a URI scheme (e.g. https:, mailto:).
+bool HasUriScheme(const std::string& href);
+
+/// \brief Splits a link into path and suffix ('?' and/or '#') parts.
+LinkReferenceParts SplitLinkReference(const std::string& href);
+
 /// \brief Extracts the base filename without extension (wide string).
 ///
 /// Returns the last component of the path with the extension removed.

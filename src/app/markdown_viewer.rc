@@ -5,8 +5,8 @@ aaa ICON "../../resources/icon.ico"
 #include <wx/msw/wx.rc>
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 1,0,0,0
- PRODUCTVERSION 1,0,0,0
+ FILEVERSION 1,0,1,0
+ PRODUCTVERSION 1,0,1,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -23,31 +23,31 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "halifaxgeorge\0"
             VALUE "FileDescription", "Markdown Viewer and Converter\0"
-            VALUE "FileVersion", "1.0\0"
+            VALUE "FileVersion", "1.01\0"
             VALUE "LegalCopyright", "(c) 2026 halifaxgeorge\0"
             VALUE "OriginalFilename", "markdown_viewer.exe\0"
             VALUE "ProductName", "Markdown Viewer\0"
-            VALUE "ProductVersion", "1.0\0"
+            VALUE "ProductVersion", "1.01\0"
         END
         BLOCK "040C04B0"
         BEGIN
             VALUE "CompanyName", "halifaxgeorge\0"
             VALUE "FileDescription", "Visionneuse et convertisseur Markdown\0"
-            VALUE "FileVersion", "1.0\0"
+            VALUE "FileVersion", "1.01\0"
             VALUE "LegalCopyright", "(c) 2026 halifaxgeorge\0"
             VALUE "OriginalFilename", "markdown_viewer.exe\0"
             VALUE "ProductName", "Visionneuse Markdown\0"
-            VALUE "ProductVersion", "1.0\0"
+            VALUE "ProductVersion", "1.01\0"
         END
         BLOCK "041604B0"
         BEGIN
             VALUE "CompanyName", "halifaxgeorge\0"
             VALUE "FileDescription", "Visualizador e conversor de Markdown\0"
-            VALUE "FileVersion", "1.0\0"
+            VALUE "FileVersion", "1.01\0"
             VALUE "LegalCopyright", "(c) 2026 halifaxgeorge\0"
             VALUE "OriginalFilename", "markdown_viewer.exe\0"
             VALUE "ProductName", "Visualizador Markdown\0"
-            VALUE "ProductVersion", "1.0\0"
+            VALUE "ProductVersion", "1.01\0"
         END
     END
     BLOCK "VarFileInfo"

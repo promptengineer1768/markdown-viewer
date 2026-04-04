@@ -1,6 +1,6 @@
 # UI strings for Markdown Viewer (en-US)
 app_name=Markdown Viewer
-app_version=1.0
+app_version=1.01
 app_version_label=Version
 app_description=Open, preview, and export Markdown documents.
 app_copyright=(c) 2026 halifaxgeorge

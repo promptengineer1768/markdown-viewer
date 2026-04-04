@@ -24,7 +24,7 @@ namespace {
 UiStrings BuildDefaultUiStrings() {
   return UiStrings{
       .app_name = L"Markdown Viewer",
-      .app_version = L"1.0",
+      .app_version = L"1.01",
       .app_version_label = L"Version",
       .app_description = L"Open, preview, and export Markdown documents.",
       .app_copyright = L"(c) 2026 halifaxgeorge",

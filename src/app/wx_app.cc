@@ -154,6 +154,13 @@ bool DetectKdeThemeDark() {
 }
 #endif
 
+std::string ToLowerAsciiCopy(std::string value) {
+  std::ranges::transform(value, value.begin(), [](unsigned char ch) {
+    return static_cast<char>(std::tolower(static_cast<int>(ch)));
+  });
+  return value;
+}
+
 ThemeChoice DetectPreferredTheme() {
 #if wxCHECK_VERSION(3, 1, 6)
   const wxSystemAppearance appearance = wxSystemSettings::GetAppearance();
@@ -271,7 +278,48 @@ PreviewHtmlWindow::PreviewHtmlWindow(MarkdownFrame* owner, wxWindow* parent,
     : wxHtmlWindow(parent, id, pos, size, style), owner_(owner) {}
 
 void PreviewHtmlWindow::OnLinkClicked(const wxHtmlLinkInfo& link) {
-  if (owner_ != nullptr && !owner_->OpenLinkInSystemBrowser(link.GetHref())) {
+  if (owner_ == nullptr) {
+    return;
+  }
+
+  const std::string href_utf8 = Utf8FromWxString(link.GetHref());
+  const LinkReferenceParts link_parts = SplitLinkReference(href_utf8);
+  if (!link_parts.suffix.empty() && link_parts.suffix.at(0) == '#') {
+    bool same_document = link_parts.path.empty();
+    if (!same_document && !owner_->current_path_.empty()) {
+      std::filesystem::path candidate_path;
+      const std::string path_lower = ToLowerAsciiCopy(link_parts.path);
+      if (path_lower.rfind("file:", 0) == 0) {
+        const wxFileName file_name =
+            wxFileSystem::URLToFileName(WxStringFromUtf8(link_parts.path));
+        if (file_name.IsOk()) {
+          candidate_path = PathFromWxString(file_name.GetFullPath());
+        }
+      } else {
+        candidate_path = PathFromWxString(WxStringFromUtf8(link_parts.path));
+        if (candidate_path.is_relative()) {
+          candidate_path = owner_->current_path_.parent_path() / candidate_path;
+        }
+      }
+      if (!candidate_path.empty()) {
+        std::error_code ignored;
+        const std::filesystem::path current_normalized =
+            std::filesystem::weakly_canonical(owner_->current_path_, ignored);
+        const std::filesystem::path candidate_normalized =
+            std::filesystem::weakly_canonical(candidate_path, ignored);
+        same_document = !current_normalized.empty() &&
+                        !candidate_normalized.empty() &&
+                        current_normalized == candidate_normalized;
+      }
+    }
+
+    if (same_document) {
+      ScrollToAnchor(WxStringFromUtf8(link_parts.suffix.substr(1)));
+      return;
+    }
+  }
+
+  if (!owner_->OpenLinkInSystemBrowser(link.GetHref())) {
     owner_->ShowError("Unable to open link in the default browser.");
   }
 }
@@ -465,20 +513,17 @@ void MarkdownFrame::OnCopyLink(wxCommandEvent& /*event*/) {
 
 bool MarkdownFrame::OpenLinkInSystemBrowser(const wxString& href) {
   const std::string href_utf8 = Utf8FromWxString(href);
-  const size_t scheme_separator = href_utf8.find(':');
-  const size_t first_delimiter = href_utf8.find_first_of("/?#");
+  const LinkReferenceParts link_parts = SplitLinkReference(href_utf8);
+  const std::string link_path_lower = ToLowerAsciiCopy(link_parts.path);
 
   wxString launch_target = href;
-  if (scheme_separator == std::string::npos ||
-      (first_delimiter != std::string::npos &&
-       scheme_separator > first_delimiter)) {
-    std::filesystem::path target_path = PathFromWxString(href);
-    if (target_path.is_relative()) {
-      const std::filesystem::path base_path =
-          current_path_.empty() ? std::filesystem::current_path()
-                                : current_path_.parent_path();
-      target_path = base_path / target_path;
+  if (link_path_lower.rfind("file:", 0) == 0) {
+    const wxFileName filename = wxFileSystem::URLToFileName(
+        WxStringFromUtf8(link_parts.path));
+    if (!filename.IsOk()) {
+      return false;
     }
+    std::filesystem::path target_path = PathFromWxString(filename.GetFullPath());
     std::error_code ignored;
     const std::filesystem::path normalized =
         std::filesystem::weakly_canonical(target_path, ignored);
@@ -486,6 +531,37 @@ bool MarkdownFrame::OpenLinkInSystemBrowser(const wxString& href) {
       target_path = normalized;
     }
     launch_target = wxFileSystem::FileNameToURL(WxStringFromPath(target_path));
+    if (!link_parts.suffix.empty()) {
+      launch_target += WxStringFromUtf8(link_parts.suffix);
+    }
+  } else if (!HasUriScheme(href_utf8)) {
+    std::filesystem::path target_path;
+    if (link_parts.path.empty()) {
+      if (current_path_.empty()) {
+        return false;
+      }
+      target_path = current_path_;
+    } else {
+      target_path = PathFromWxString(WxStringFromUtf8(link_parts.path));
+      if (target_path.is_relative()) {
+        const std::filesystem::path base_path =
+            current_path_.empty() ? std::filesystem::current_path()
+                                  : current_path_.parent_path();
+        target_path = base_path / target_path;
+      }
+    }
+
+    std::error_code ignored;
+    const std::filesystem::path normalized =
+        std::filesystem::weakly_canonical(target_path, ignored);
+    if (!normalized.empty()) {
+      target_path = normalized;
+    }
+
+    launch_target = wxFileSystem::FileNameToURL(WxStringFromPath(target_path));
+    if (!link_parts.suffix.empty()) {
+      launch_target += WxStringFromUtf8(link_parts.suffix);
+    }
   }
   return wxLaunchDefaultBrowser(launch_target);
 }
